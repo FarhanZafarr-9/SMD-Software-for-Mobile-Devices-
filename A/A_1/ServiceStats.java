@@ -7,6 +7,8 @@ public class ServiceStats {
     private int errorCount;
     private int infoCount;
     private float errorRate;
+    private LogEntry[] logEntries;
+    private int logEntryIndex;
 
     public ServiceStats(String source) {
         this.source = source;
@@ -15,6 +17,8 @@ public class ServiceStats {
         this.errorCount = 0;
         this.infoCount = 0;
         this.errorRate = 0.00f;
+        this.logEntries = new LogEntry[10];
+        this.logEntryIndex = 0;
     }
 
     @Override
@@ -44,6 +48,16 @@ public class ServiceStats {
         }
 
         errorRate = (float) errorCount / totalRecords * 100;
+
+        logEntries[logEntryIndex++] = entry;
+
+        if (logEntryIndex == logEntries.length) {
+            LogEntry[] newLogEntries = new LogEntry[logEntries.length * 2];
+            for (int i = 0; i < logEntries.length; i++) {
+                newLogEntries[i] = logEntries[i];
+            }
+            logEntries = newLogEntries;
+        }
     }
 
     // getters
@@ -70,5 +84,13 @@ public class ServiceStats {
 
     public float getErrorRate() {
         return errorRate;
+    }
+
+    public LogEntry[] getLogEntries() {
+        return logEntries;
+    }
+
+    public int getLogEntryIndex() {
+        return logEntryIndex;
     }
 }

@@ -3,6 +3,9 @@ package A.A_1;
 import java.io.BufferedReader;
 import java.io.FileReader;
 //import java.util.Scanner;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 public class LogForge {
 
@@ -172,6 +175,70 @@ public class LogForge {
         return false;
     }
 
+    private static Incident[] reSizeIncidents(Incident[] incidents) {
+        Incident[] newIncidents = new Incident[incidents.length * 2];
+        for (int i = 0; i < incidents.length; i++) {
+            newIncidents[i] = incidents[i];
+        }
+        incidents = newIncidents;
+        return incidents;
+    }
+
+    private static final DateTimeFormatter TS_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    public static long secondsBetween(String ts1, String ts2) {
+        LocalDateTime t1 = LocalDateTime.parse(ts1, TS_FORMAT);
+        LocalDateTime t2 = LocalDateTime.parse(ts2, TS_FORMAT);
+        return ChronoUnit.SECONDS.between(t1, t2);
+    }
+
+    private static Incident[] getIncidents(LogEntry[] logEntries, int size) {
+
+        Incident[] incidents = new Incident[5];
+        int incidentIndex = 0;
+        Incident currentIncident = null;
+        for (LogEntry entry : logEntries) {
+            if (entry == null) {
+                if (currentIncident != null && currentIncident.getCount() > 2) {
+                    incidents[incidentIndex++] = currentIncident;
+                }
+                break;
+            }
+
+            if (entry.getLevel().equals("ERROR")) {
+
+                if (currentIncident == null) {
+                    currentIncident = new Incident(entry.getService(), entry.getTimestamp());
+                }
+                else {
+                    long gap = secondsBetween(currentIncident.getStartTime(), entry.getTimestamp());
+                    if (gap <= 60) {
+                        currentIncident.update(entry.getTimestamp());
+                    } else {
+                        if (currentIncident.getCount() > 2) {
+                            incidents[incidentIndex++] = currentIncident;
+
+                            if (incidentIndex == incidents.length) {
+                                incidents = reSizeIncidents(incidents);
+                            }
+                        }
+                        currentIncident = new Incident(entry.getService(), entry.getTimestamp());
+                    }
+                }
+            } else {
+                if (currentIncident != null && currentIncident.getCount() > 2) {
+                    incidents[incidentIndex++] = currentIncident;
+
+                    if (incidentIndex == incidents.length) {
+                        incidents = reSizeIncidents(incidents);
+                    }
+                }
+                currentIncident = null;
+            }
+        }
+        return incidents;
+    }
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.out.println("Please provide a log file path as an argument.");
@@ -251,6 +318,23 @@ public class LogForge {
                 System.out.println("INFO: " + totalInfo);
                 System.out.println("WARN: " + totalWarnings);
                 System.out.println("ERROR: " + totalErrors);
+
+                for (int i = 0; i < serviceStatsIndex; i++) {
+                    ServiceStats stats = serviceStats[i];
+                    Incident[] incidents = getIncidents(stats.getLogEntries(), stats.getLogEntryIndex());
+
+                    System.out.println("\nIncidents for service: " + stats.getSource());
+                    boolean hasIncidents = false;
+                    for (Incident incident : incidents) {
+                        if (incident != null) {
+                            System.out.println(incident.toString());
+                            hasIncidents = true;
+                        }
+                    }
+                    if (!hasIncidents) {
+                        System.out.println("No incidents found for this service.");
+                    }
+                }
 
             } catch (Exception e) {
                 System.err.println("Error occurred while reading the log file: " + e.getMessage());
