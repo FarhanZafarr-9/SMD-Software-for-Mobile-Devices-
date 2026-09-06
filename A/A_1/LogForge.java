@@ -246,6 +246,41 @@ public class LogForge {
         return newRequestStats;
     }
 
+    public static long timestampToNumber(String timestamp) {
+        String datePart = getFeild(timestamp, 0, ' ');
+        String timePart = getFeild(timestamp, 1, ' ');
+
+        int year = Integer.parseInt(getFeild(datePart, 0, '-'));
+        int month = Integer.parseInt(getFeild(datePart, 1, '-'));
+        int day = Integer.parseInt(getFeild(datePart, 2, '-'));
+
+        int hour = Integer.parseInt(getFeild(timePart, 0, ':'));
+        int minute = Integer.parseInt(getFeild(timePart, 1, ':'));
+        int second = Integer.parseInt(getFeild(timePart, 2, ':'));
+
+        return year * 10000000000L
+                + month * 100000000L
+                + day * 1000000L
+                + hour * 10000L
+                + minute * 100L
+                + second;
+    }
+
+    public static LogEntry[] sortLogEntriesByTimestamp(LogEntry[] logEntries, int size) {
+        for (int i = 1; i < size; i++) {
+            LogEntry current = logEntries[i];
+            long currentValue = timestampToNumber(current.getTimestamp());
+            int j = i - 1;
+
+            while (j >= 0 && timestampToNumber(logEntries[j].getTimestamp()) > currentValue) {
+                logEntries[j + 1] = logEntries[j];
+                j--;
+            }
+            logEntries[j + 1] = current;
+        }
+        return logEntries;
+    }
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.out.println("Please provide a log file path as an argument.");
@@ -269,32 +304,38 @@ public class LogForge {
                 int validRecords = 0, totalWarnings = 0, totalErrors = 0, totalInfo = 0, invalidRecords = 0;
 
                 while ((line = br.readLine()) != null) {
-
                     LogEntry entry = validateEntry(line);
 
                     if (entry == null) {
                         invalidRecords++;
                         continue;
-                    } else {
+                    }
 
-                        for (RequestStats requestStat : requestStats) {
-                            if (requestStat != null && requestStat.getId() == entry.getId()) {
-                                requestStat.updateStats(entry);
-                                break;
-                            } else if (requestStat == null) {
-                                RequestStats newRequestStat = new RequestStats(entry.getId(), entry);
-                                requestStats[requestStatsIndex++] = newRequestStat;
-                                if (requestStatsIndex == requestStats.length) {
-                                    requestStats = resizeRequestStats(requestStats);
-                                }
-                                break;
-                            }
+                    logEntries[logEntryIndex++] = entry;
+                    if (logEntryIndex == logEntries.length) {
+                        logEntries = reSizeLogEntries(logEntries);
+                    }
+                }
+
+                logEntries = sortLogEntriesByTimestamp(logEntries, logEntryIndex);
+
+                for (int i = 0; i < logEntryIndex; i++) {
+                    LogEntry entry = logEntries[i];
+                    boolean found = false;
+
+                    for (int j = 0; j < requestStats.length; j++) {
+                        if (requestStats[j] != null && requestStats[j].getId() == entry.getId()) {
+                            requestStats[j].updateStats(entry);
+                            found = true;
+                            break;
                         }
+                    }
 
-                        logEntries[logEntryIndex++] = entry;
-
-                        if (logEntryIndex == logEntries.length) {
-                            logEntries = reSizeLogEntries(logEntries);
+                    if (!found) {
+                        RequestStats newRequestStat = new RequestStats(entry.getId(), entry);
+                        requestStats[requestStatsIndex++] = newRequestStat;
+                        if (requestStatsIndex == requestStats.length) {
+                            requestStats = resizeRequestStats(requestStats);
                         }
                     }
                 }
