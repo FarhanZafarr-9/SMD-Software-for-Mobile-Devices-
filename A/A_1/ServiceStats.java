@@ -23,12 +23,12 @@ public class ServiceStats {
 
     @Override
     public String toString() {
-        return source +
-                ", totalRecords=" + totalRecords +
-                ", info=" + infoCount +
-                ", warn=" + warningCount +
-                ", error=" + errorCount +
-                ", errorRate=" + String.format("%.2f", errorRate) + "%";
+        return "Service: " + source + "\n" +
+                "Total: " + totalRecords + "\n" +
+                "INFO: " + infoCount + "\n" +
+                "WARN: " + warningCount + "\n" +
+                "ERROR: " + errorCount + "\n" +
+                "Error Rate: " + String.format("%.2f", errorRate) + "%\n";
     }
 
     public void updateStats(LogEntry entry) {

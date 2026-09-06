@@ -281,143 +281,196 @@ public class LogForge {
         return logEntries;
     }
 
+    public static String makeHeader(String number, String title) {
+        String headerText = number + ". " + title;
+        String underline = "";
+        for (int i = 0; i < headerText.length(); i++) {
+            underline += "_";
+        }
+        return headerText + "\n" + underline + "\n";
+    }
+
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.out.println("Please provide a log file path as an argument.");
             return;
-        } else {
+        }
 
-            LogEntry[] logEntries = new LogEntry[5];
-            int logEntryIndex = 0;
-            ServiceStats[] serviceStats = new ServiceStats[5];
-            int serviceStatsIndex = 0;
-            RequestStats[] requestStats = new RequestStats[5];
-            int requestStatsIndex = 0;
+        LogEntry[] logEntries = new LogEntry[5];
+        int logEntryIndex = 0;
+        ServiceStats[] serviceStats = new ServiceStats[5];
+        int serviceStatsIndex = 0;
+        RequestStats[] requestStats = new RequestStats[5];
+        int requestStatsIndex = 0;
+        Incident[] allIncidents = new Incident[5];
+        int allIncidentsIndex = 0;
 
-            FileReader fr = null;
-            BufferedReader br = null;
+        FileReader fr = null;
+        BufferedReader br = null;
+        try {
+            fr = new FileReader(args[0]);
+            br = new BufferedReader(fr);
+            String line;
+
+            int validRecords = 0, totalWarnings = 0, totalErrors = 0, totalInfo = 0, invalidRecords = 0;
+
+            while ((line = br.readLine()) != null) {
+                LogEntry entry = validateEntry(line);
+
+                if (entry == null) {
+                    invalidRecords++;
+                    continue;
+                }
+
+                logEntries[logEntryIndex++] = entry;
+                if (logEntryIndex == logEntries.length) {
+                    logEntries = reSizeLogEntries(logEntries);
+                }
+            }
+
+            logEntries = sortLogEntriesByTimestamp(logEntries, logEntryIndex);
+
+            for (int i = 0; i < logEntryIndex; i++) {
+                LogEntry entry = logEntries[i];
+                boolean found = false;
+
+                for (int j = 0; j < requestStats.length; j++) {
+                    if (requestStats[j] != null && requestStats[j].getId() == entry.getId()) {
+                        requestStats[j].updateStats(entry);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    RequestStats newRequestStat = new RequestStats(entry.getId(), entry);
+                    requestStats[requestStatsIndex++] = newRequestStat;
+                    if (requestStatsIndex == requestStats.length) {
+                        requestStats = resizeRequestStats(requestStats);
+                    }
+                }
+            }
+
+            for (int i = 0; i < logEntryIndex; i++) {
+                LogEntry entry = logEntries[i];
+                String service = entry.getService();
+                boolean found = false;
+
+                for (int j = 0; j < serviceStats.length; j++) {
+                    if (serviceStats[j] != null && serviceStats[j].getSource().equals(service)) {
+                        serviceStats[j].updateStats(entry);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    ServiceStats newServiceStat = new ServiceStats(service);
+                    newServiceStat.updateStats(entry);
+
+                    serviceStats[serviceStatsIndex++] = newServiceStat;
+                    if (serviceStatsIndex == serviceStats.length) {
+                        serviceStats = reSizeServiceStats(serviceStats);
+                    }
+                }
+            }
+
+            serviceStats = sortServiceStats(serviceStats, serviceStatsIndex);
+
+            // ===== Build the report string as we go =====
+            String report = "";
+            report += "========================\n";
+            report += "LOGFORGE INCIDENT REPORT\n";
+            report += "========================\n\n\n";
+
+            // Section 1: Summary
+            report += makeHeader("1", "SUMMARY") + "\n";
+            for (int i = 0; i < serviceStatsIndex; i++) {
+                validRecords += serviceStats[i].getTotalRecords();
+                totalWarnings += serviceStats[i].getWarningCount();
+                totalErrors += serviceStats[i].getErrorCount();
+                totalInfo += serviceStats[i].getInfoCount();
+            }
+            String summaryText = "Total lines: " + (validRecords + invalidRecords) + "\n" +
+                    "Valid records: " + validRecords + "\n" +
+                    "Invalid records: " + invalidRecords + "\n\n" +
+                    "INFO: " + totalInfo + "\n" +
+                    "WARN: " + totalWarnings + "\n" +
+                    "ERROR: " + totalErrors + "\n\n\n";
+            System.out.println(summaryText);
+            report += summaryText;
+
+            // Section 2: Service Statistics
+            report += makeHeader("2", "SERVICE STATISTICS") + "\n";
+            System.out.println(makeHeader("2", "SERVICE STATISTICS"));
+            for (int i = 0; i < serviceStatsIndex; i++) {
+                System.out.println(serviceStats[i].toString());
+                report += serviceStats[i].toString() + "\n";
+            }
+            report += "\n";
+
+            // Section 3: Incidents (collected globally across all services)
+            report += makeHeader("3", "INCIDENTS") + "\n";
+            System.out.println(makeHeader("3", "INCIDENTS"));
+            for (int i = 0; i < serviceStatsIndex; i++) {
+                ServiceStats stats = serviceStats[i];
+                Incident[] incidents = getIncidents(stats.getLogEntries(), stats.getLogEntryIndex());
+
+                for (Incident incident : incidents) {
+                    if (incident != null) {
+                        allIncidents[allIncidentsIndex++] = incident;
+                        if (allIncidentsIndex == allIncidents.length) {
+                            allIncidents = reSizeIncidents(allIncidents);
+                        }
+                    }
+                }
+            }
+            if (allIncidentsIndex == 0) {
+                System.out.println("No incidents detected.\n");
+                report += "No incidents detected.\n\n";
+            } else {
+                for (int i = 0; i < allIncidentsIndex; i++) {
+                    System.out.println(allIncidents[i].toString());
+                    report += allIncidents[i].toString() + "\n";
+                }
+            }
+            report += "\n";
+
+            // Section 4: Request Statistics
+            report += makeHeader("4", "REQUEST STATISTICS") + "\n";
+            System.out.println(makeHeader("4", "REQUEST STATISTICS"));
+            for (RequestStats requestStat : requestStats) {
+                if (requestStat != null) {
+                    System.out.println(requestStat.toString());
+                    report += requestStat.toString() + "\n";
+                }
+            }
+
+            report += "END OF REPORT\n";
+            System.out.println("END OF REPORT");
+
+            // ===== Write report to file =====
+            String outputFileName = (args.length >= 2) ? args[1] : "logforge_report.txt";
+            java.io.FileWriter fw = new java.io.FileWriter(outputFileName);
+            java.io.BufferedWriter bw = new java.io.BufferedWriter(fw);
+            bw.write(report);
+            bw.close();
+            fw.close();
+
+            System.out.println("\nReport written to " + outputFileName);
+
+        } catch (Exception e) {
+            System.err.println("Error occurred while reading the log file: " + e.getMessage());
+
+        } finally {
             try {
-                fr = new FileReader(args[0]);
-                br = new BufferedReader(fr);
-                String line;
-
-                int validRecords = 0, totalWarnings = 0, totalErrors = 0, totalInfo = 0, invalidRecords = 0;
-
-                while ((line = br.readLine()) != null) {
-                    LogEntry entry = validateEntry(line);
-
-                    if (entry == null) {
-                        invalidRecords++;
-                        continue;
-                    }
-
-                    logEntries[logEntryIndex++] = entry;
-                    if (logEntryIndex == logEntries.length) {
-                        logEntries = reSizeLogEntries(logEntries);
-                    }
-                }
-
-                logEntries = sortLogEntriesByTimestamp(logEntries, logEntryIndex);
-
-                for (int i = 0; i < logEntryIndex; i++) {
-                    LogEntry entry = logEntries[i];
-                    boolean found = false;
-
-                    for (int j = 0; j < requestStats.length; j++) {
-                        if (requestStats[j] != null && requestStats[j].getId() == entry.getId()) {
-                            requestStats[j].updateStats(entry);
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found) {
-                        RequestStats newRequestStat = new RequestStats(entry.getId(), entry);
-                        requestStats[requestStatsIndex++] = newRequestStat;
-                        if (requestStatsIndex == requestStats.length) {
-                            requestStats = resizeRequestStats(requestStats);
-                        }
-                    }
-                }
-
-                for (int i = 0; i < logEntryIndex; i++) {
-                    LogEntry entry = logEntries[i];
-                    String service = entry.getService();
-                    boolean found = false;
-
-                    for (int j = 0; j < serviceStats.length; j++) {
-                        if (serviceStats[j] != null && serviceStats[j].getSource().equals(service)) {
-                            serviceStats[j].updateStats(entry);
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found) {
-                        ServiceStats newServiceStat = new ServiceStats(service);
-                        newServiceStat.updateStats(entry);
-
-                        serviceStats[serviceStatsIndex++] = newServiceStat;
-                        if (serviceStatsIndex == serviceStats.length) {
-                            serviceStats = reSizeServiceStats(serviceStats);
-                        }
-                    }
-                }
-
-                System.out.println("Service Statistics:\n");
-                serviceStats = sortServiceStats(serviceStats, serviceStatsIndex);
-                for (int i = 0; i < serviceStatsIndex; i++) {
-                    System.out.println(serviceStats[i].toString());
-
-                    validRecords += serviceStats[i].getTotalRecords();
-                    totalWarnings += serviceStats[i].getWarningCount();
-                    totalErrors += serviceStats[i].getErrorCount();
-                    totalInfo += serviceStats[i].getInfoCount();
-                }
-
-                System.out.println("\nSummary:\n");
-                System.out.println("Total records: " + (validRecords + invalidRecords));
-                System.out.println("Valid records: " + validRecords);
-                System.out.println("Invalid records: " + invalidRecords);
-                System.out.println("INFO: " + totalInfo);
-                System.out.println("WARN: " + totalWarnings);
-                System.out.println("ERROR: " + totalErrors);
-
-                for (int i = 0; i < serviceStatsIndex; i++) {
-                    ServiceStats stats = serviceStats[i];
-                    Incident[] incidents = getIncidents(stats.getLogEntries(), stats.getLogEntryIndex());
-
-                    System.out.println("\nIncidents for service: " + stats.getSource());
-                    boolean hasIncidents = false;
-                    for (Incident incident : incidents) {
-                        if (incident != null) {
-                            System.out.println(incident.toString());
-                            hasIncidents = true;
-                        }
-                    }
-                    if (!hasIncidents) {
-                        System.out.println("No incidents found for this service.");
-                    }
-                }
-
-                for (RequestStats requestStat : requestStats) {
-                    if (requestStat != null) {
-                        System.out.println(requestStat.toString());
-                    }
-                }
-
+                if (br != null)
+                    br.close();
+                if (fr != null)
+                    fr.close();
             } catch (Exception e) {
-                System.err.println("Error occurred while reading the log file: " + e.getMessage());
-
-            } finally {
-                try {
-                    if (br != null)
-                        br.close();
-                    if (fr != null)
-                        fr.close();
-                } catch (Exception e) {
-                    System.err.println("Error occurred while closing the file: " + e.getMessage());
-                }
+                System.err.println("Error occurred while closing the file: " + e.getMessage());
             }
         }
     }

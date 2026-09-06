@@ -92,20 +92,16 @@ public class RequestStats {
         String servicesList = "";
         for (int i = 0; i < services.length; i++) {
             if (services[i] != null) {
-                servicesList += services[i];
-            }
-            if (i < services.length - 1 && services[i + 1] != null) {
-                servicesList += ", ";
+                servicesList += services[i] + " ";
             }
         }
-
-        return "RequestStats{" +
-                "id=" + id +
-                ", status='" + status + '\'' +
-                ", services=[" + servicesList + "]" +
-                ", records=" + records +
-                ", errors=" + errors +
-                '}';
+        return "Request: " + id + "\n" +
+                "Status: " + status + "\n" +
+                "Records: " + records + "\n" +
+                "Errors: " + errors + "\n" +
+                "Services: " + servicesList.trim() + "\n";
     }
+
+    
 
 }

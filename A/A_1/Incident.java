@@ -36,12 +36,9 @@ public class Incident {
 
     @Override
     public String toString() {
-        return "Incident{" +
-                "service='" + service + '\'' +
-                ", startTime='" + startTime + '\'' +
-                ", endTime='" + endTime + '\'' +
-                ", count=" + count +
-                '}';
+        return "Service: " + service + "\n" +
+                "First Error: " + startTime + "\n" +
+                "Last Error: " + endTime + "\n";
     }
 
 
