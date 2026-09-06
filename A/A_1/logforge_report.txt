@@ -1,0 +1,247 @@
+========================
+LOGFORGE INCIDENT REPORT
+========================
+
+
+1. SUMMARY
+__________
+
+Total lines: 49
+Valid records: 41
+Invalid records: 8
+
+INFO: 22
+WARN: 4
+ERROR: 15
+
+
+2. SERVICE STATISTICS
+_____________________
+
+Service: CACHE
+Total: 10
+INFO: 3
+WARN: 1
+ERROR: 6
+Error Rate: 60.00%
+
+Service: DB
+Total: 10
+INFO: 5
+WARN: 0
+ERROR: 5
+Error Rate: 50.00%
+
+Service: API
+Total: 8
+INFO: 6
+WARN: 0
+ERROR: 2
+Error Rate: 25.00%
+
+Service: PAYMENT
+Total: 4
+INFO: 2
+WARN: 1
+ERROR: 1
+Error Rate: 25.00%
+
+Service: NOTIFICATION
+Total: 5
+INFO: 2
+WARN: 2
+ERROR: 1
+Error Rate: 20.00%
+
+Service: AUTH
+Total: 4
+INFO: 4
+WARN: 0
+ERROR: 0
+Error Rate: 0.00%
+
+
+3. INCIDENTS
+____________
+
+Service: CACHE
+First Error: 2026-09-03 10:00:05
+Last Error: 2026-09-03 10:00:15
+
+Service: DB
+First Error: 2026-09-03 10:00:02
+Last Error: 2026-09-03 10:01:02
+
+
+4. REQUEST STATISTICS
+_____________________
+
+Request: 1000
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: CACHE
+
+Request: 2000
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: DB
+
+Request: 2001
+Status: FAILED
+Records: 3
+Errors: 3
+Services: DB
+
+Request: 1001
+Status: FAILED
+Records: 3
+Errors: 3
+Services: CACHE
+
+Request: 1002
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: CACHE
+
+Request: 1003
+Status: FAILED
+Records: 1
+Errors: 1
+Services: CACHE
+
+Request: 2002
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: DB
+
+Request: 2003
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: DB
+
+Request: 1004
+Status: FAILED
+Records: 1
+Errors: 1
+Services: CACHE
+
+Request: 1005
+Status: FAILED
+Records: 1
+Errors: 1
+Services: CACHE
+
+Request: 1006
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: CACHE
+
+Request: 1007
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: CACHE
+
+Request: 3000
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: PAYMENT
+
+Request: 3001
+Status: FAILED
+Records: 1
+Errors: 1
+Services: PAYMENT
+
+Request: 3002
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: PAYMENT
+
+Request: 4000
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: API
+
+Request: 4001
+Status: FAILED
+Records: 1
+Errors: 1
+Services: API
+
+Request: 4002
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: API
+
+Request: 4003
+Status: FAILED
+Records: 1
+Errors: 1
+Services: API
+
+Request: 5000
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: AUTH
+
+Request: 5001
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: AUTH
+
+Request: 6000
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: NOTIFICATION
+
+Request: 6001
+Status: FAILED
+Records: 1
+Errors: 1
+Services: NOTIFICATION
+
+Request: 6002
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: NOTIFICATION
+
+Request: 6003
+Status: SUCCESS
+Records: 1
+Errors: 0
+Services: NOTIFICATION
+
+Request: 9000
+Status: FAILED
+Records: 5
+Errors: 1
+Services: AUTH API DB PAYMENT NOTIFICATION
+
+Request: 9001
+Status: SUCCESS
+Records: 3
+Errors: 0
+Services: AUTH API DB
+
+Request: 9002
+Status: FAILED
+Records: 4
+Errors: 1
+Services: API DB
+
+END OF REPORT

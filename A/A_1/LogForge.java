@@ -451,7 +451,7 @@ public class LogForge {
             System.out.println("END OF REPORT");
 
             // ===== Write report to file =====
-            String outputFileName = (args.length >= 2) ? args[1] : "logforge_report.txt";
+            String outputFileName = (args.length >= 2) ? args[1] : "A\\A_1\\logforge_report.txt";
             java.io.FileWriter fw = new java.io.FileWriter(outputFileName);
             java.io.BufferedWriter bw = new java.io.BufferedWriter(fw);
             bw.write(report);
