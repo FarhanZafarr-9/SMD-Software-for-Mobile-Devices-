@@ -146,6 +146,32 @@ public class LogForge {
         return serviceStats;
     }
 
+    public static ServiceStats[] sortServiceStats(ServiceStats[] serviceStats, int size) {
+        for (int i = 0; i < size - 1; i++) {
+            int best = i;
+            for (int j = i + 1; j < size; j++) {
+                if (isBetter(serviceStats[j], serviceStats[best])) {
+                    best = j;
+                }
+            }
+            ServiceStats temp = serviceStats[i];
+            serviceStats[i] = serviceStats[best];
+            serviceStats[best] = temp;
+        }
+        return serviceStats;
+    }
+
+    private static boolean isBetter(ServiceStats a, ServiceStats b) {
+        if (a.getErrorRate() > b.getErrorRate()) {
+            return true;
+        }
+        if (a.getErrorRate() == b.getErrorRate()
+                && a.getSource().compareTo(b.getSource()) < 0) {
+            return true;
+        }
+        return false;
+    }
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.out.println("Please provide a log file path as an argument.");
@@ -208,6 +234,7 @@ public class LogForge {
                 }
 
                 System.out.println("Service Statistics:\n");
+                serviceStats = sortServiceStats(serviceStats, serviceStatsIndex);
                 for (int i = 0; i < serviceStatsIndex; i++) {
                     System.out.println(serviceStats[i].toString());
 

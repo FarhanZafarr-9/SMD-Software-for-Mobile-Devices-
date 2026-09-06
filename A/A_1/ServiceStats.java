@@ -6,6 +6,7 @@ public class ServiceStats {
     private int warningCount;
     private int errorCount;
     private int infoCount;
+    private float errorRate;
 
     public ServiceStats(String source) {
         this.source = source;
@@ -13,6 +14,7 @@ public class ServiceStats {
         this.warningCount = 0;
         this.errorCount = 0;
         this.infoCount = 0;
+        this.errorRate = 0.00f;
     }
 
     @Override
@@ -21,7 +23,8 @@ public class ServiceStats {
                 ", totalRecords=" + totalRecords +
                 ", info=" + infoCount +
                 ", warn=" + warningCount +
-                ", error=" + errorCount;
+                ", error=" + errorCount +
+                ", errorRate=" + String.format("%.2f", errorRate) + "%";
     }
 
     public void updateStats(LogEntry entry) {
@@ -39,6 +42,8 @@ public class ServiceStats {
             default:
                 break;
         }
+
+        errorRate = (float) errorCount / totalRecords * 100;
     }
 
     // getters
@@ -61,5 +66,9 @@ public class ServiceStats {
 
     public int getInfoCount() {
         return infoCount;
+    }
+
+    public float getErrorRate() {
+        return errorRate;
     }
 }
