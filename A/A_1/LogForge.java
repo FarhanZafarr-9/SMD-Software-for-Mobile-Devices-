@@ -75,14 +75,77 @@ public class LogForge {
         return true;
     }
 
+    public static LogEntry validateEntry(String line) {
+
+        boolean valid = true;
+
+        String[] fields = {
+                getFeild(line, 0, '|'), // timestamp
+                getFeild(line, 1, '|'), // log level
+                getFeild(line, 2, '|'), // log type
+                getFeild(line, 3, '|'), // log id
+                getFeild(line, 4, '|'), // log message
+                getFeild(line, 5, '|') // validation check using an extra feild
+        };
+
+        for (int i = 0; i < fields.length - 1; i++) {
+            if (fields[i].equals("INVALID")) {
+                valid = false;
+                break;
+            }
+        }
+
+        if (!valid) {
+            return null;
+        }
+
+        if (fields[2].equals("INVALID") || !fields[5].equals("INVALID")) {
+            valid = false;
+        }
+
+        if (!valid) {
+            return null;
+        }
+
+        int id = 0;
+        try {
+            id = Integer.parseInt(fields[3]);
+        } catch (Exception e) {
+            return null;
+        }
+
+        if (id <= 0 || validDate(fields[0]) == false) {
+            return null;
+        }
+
+        switch (fields[2]) {
+            case "ERROR", "WARN", "INFO":
+                break;
+            default:
+                return null;
+        }
+
+        return new LogEntry(id, fields[0], fields[1], fields[2], fields[4]);
+    }
+
+    public static LogEntry[] reSizeLogEntries(LogEntry[] logEntries) {
+        LogEntry[] newLogEntries = new LogEntry[logEntries.length * 2];
+        for (int i = 0; i < logEntries.length; i++) {
+            newLogEntries[i] = logEntries[i];
+        }
+        logEntries = newLogEntries;
+        return logEntries;
+    }
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.out.println("Please provide a log file path as an argument.");
             return;
         } else {
-            for (String arg : args) {
-                System.out.println(arg);
-            }
+
+            LogEntry[] logEntries = new LogEntry[5];
+            int logEntryIndex = 0;
+
             FileReader fr = null;
             BufferedReader br = null;
             try {
@@ -99,71 +162,33 @@ public class LogForge {
 
                 while ((line = br.readLine()) != null) {
 
-                    boolean valid = true;
-
-                    String[] fields = {
-                            getFeild(line, 0, '|'), // timestamp
-                            getFeild(line, 1, '|'), // log level
-                            getFeild(line, 2, '|'), // log type
-                            getFeild(line, 3, '|'), // log id
-                            getFeild(line, 4, '|'), // log message
-                            getFeild(line, 5, '|') // validation check using an extra feild
-                    };
-
+                    LogEntry entry = validateEntry(line);
                     total++;
 
-                    for (int i = 0; i < fields.length - 1; i++) {
-                        if (fields[i].equals("INVALID")) {
-                            valid = false;
-                            break;
+                    if (entry == null) {
+                        invalidCount++;
+                        continue;
+                    } else {
+
+                        switch (entry.getLevel()) {
+                            case "ERROR":
+                                errorCount++;
+                                break;
+                            case "WARN":
+                                warnCount++;
+                                break;
+                            case "INFO":
+                                infoCount++;
+                                break;
+                            default:
+                                break;
                         }
-                    }
 
-                    if (!valid) {
-                        invalidCount++;
-                        continue;
-                    }
-
-                    if (fields[2].equals("INVALID") || !fields[5].equals("INVALID")) {
-                        valid = false;
-                    }
-
-                    if (!valid) {
-                        invalidCount++;
-                        continue;
-                    }
-
-                    int id = 0;
-                    try {
-                        id = Integer.parseInt(fields[3]);
-                    } catch (Exception e) {
-                        invalidCount++;
-                        continue;
-                    }
-
-                    if (id <= 0 || validDate(fields[0]) == false) {
-                        invalidCount++;
-                        continue;
-                    }
-
-                    switch (fields[2]) {
-                        case "ERROR":
-                            errorCount++;
-                            break;
-                        case "WARN":
-                            warnCount++;
-                            break;
-                        case "INFO":
-                            infoCount++;
-                            break;
-                        default:
-                            valid = false;
-                            break;
-                    }
-
-                    if (!valid) {
-                        invalidCount++;
-                        continue;
+                        logEntries[logEntryIndex++] = entry;
+                        
+                        if (logEntryIndex == logEntries.length) {
+                            logEntries = reSizeLogEntries(logEntries);
+                        }
                     }
                 }
 
