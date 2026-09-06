@@ -209,8 +209,7 @@ public class LogForge {
 
                 if (currentIncident == null) {
                     currentIncident = new Incident(entry.getService(), entry.getTimestamp());
-                }
-                else {
+                } else {
                     long gap = secondsBetween(currentIncident.getStartTime(), entry.getTimestamp());
                     if (gap <= 60) {
                         currentIncident.update(entry.getTimestamp());
@@ -239,6 +238,14 @@ public class LogForge {
         return incidents;
     }
 
+    public static RequestStats[] resizeRequestStats(RequestStats[] requestStats) {
+        RequestStats[] newRequestStats = new RequestStats[requestStats.length * 2];
+        for (int i = 0; i < requestStats.length; i++) {
+            newRequestStats[i] = requestStats[i];
+        }
+        return newRequestStats;
+    }
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.out.println("Please provide a log file path as an argument.");
@@ -249,6 +256,8 @@ public class LogForge {
             int logEntryIndex = 0;
             ServiceStats[] serviceStats = new ServiceStats[5];
             int serviceStatsIndex = 0;
+            RequestStats[] requestStats = new RequestStats[5];
+            int requestStatsIndex = 0;
 
             FileReader fr = null;
             BufferedReader br = null;
@@ -267,6 +276,20 @@ public class LogForge {
                         invalidRecords++;
                         continue;
                     } else {
+
+                        for (RequestStats requestStat : requestStats) {
+                            if (requestStat != null && requestStat.getId() == entry.getId()) {
+                                requestStat.updateStats(entry);
+                                break;
+                            } else if (requestStat == null) {
+                                RequestStats newRequestStat = new RequestStats(entry.getId(), entry);
+                                requestStats[requestStatsIndex++] = newRequestStat;
+                                if (requestStatsIndex == requestStats.length) {
+                                    requestStats = resizeRequestStats(requestStats);
+                                }
+                                break;
+                            }
+                        }
 
                         logEntries[logEntryIndex++] = entry;
 
@@ -333,6 +356,12 @@ public class LogForge {
                     }
                     if (!hasIncidents) {
                         System.out.println("No incidents found for this service.");
+                    }
+                }
+
+                for (RequestStats requestStat : requestStats) {
+                    if (requestStat != null) {
+                        System.out.println(requestStat.toString());
                     }
                 }
 
