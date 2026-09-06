@@ -1,0 +1,5 @@
+2026-08-29 10:01:04|AUTH|INFO|101|login successful
+broken line
+2026-08-29|API|ERROR|102|bad timestamp
+2026-08-29 10:01:08|DB|ERROR|0|invalid request
+2026-08-29 10:01:10|DB|DEBUG|103|unknown level
