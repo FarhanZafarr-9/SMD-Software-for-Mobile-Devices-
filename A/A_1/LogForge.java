@@ -137,6 +137,15 @@ public class LogForge {
         return logEntries;
     }
 
+    public static ServiceStats[] reSizeServiceStats(ServiceStats[] serviceStats) {
+        ServiceStats[] newServiceStats = new ServiceStats[serviceStats.length * 2];
+        for (int i = 0; i < serviceStats.length; i++) {
+            newServiceStats[i] = serviceStats[i];
+        }
+        serviceStats = newServiceStats;
+        return serviceStats;
+    }
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.out.println("Please provide a log file path as an argument.");
@@ -145,6 +154,8 @@ public class LogForge {
 
             LogEntry[] logEntries = new LogEntry[5];
             int logEntryIndex = 0;
+            ServiceStats[] serviceStats = new ServiceStats[5];
+            int serviceStatsIndex = 0;
 
             FileReader fr = null;
             BufferedReader br = null;
@@ -153,51 +164,66 @@ public class LogForge {
                 br = new BufferedReader(fr);
                 String line;
 
-                int total = 0;
-                // int validCount = 0;
-                int invalidCount = 0;
-                int errorCount = 0;
-                int warnCount = 0;
-                int infoCount = 0;
+                int validRecords = 0, totalWarnings = 0, totalErrors = 0, totalInfo = 0, invalidRecords = 0;
 
                 while ((line = br.readLine()) != null) {
 
                     LogEntry entry = validateEntry(line);
-                    total++;
 
                     if (entry == null) {
-                        invalidCount++;
+                        invalidRecords++;
                         continue;
                     } else {
 
-                        switch (entry.getLevel()) {
-                            case "ERROR":
-                                errorCount++;
-                                break;
-                            case "WARN":
-                                warnCount++;
-                                break;
-                            case "INFO":
-                                infoCount++;
-                                break;
-                            default:
-                                break;
-                        }
-
                         logEntries[logEntryIndex++] = entry;
-                        
+
                         if (logEntryIndex == logEntries.length) {
                             logEntries = reSizeLogEntries(logEntries);
                         }
                     }
                 }
 
-                System.out.println("Total lines: " + total);
-                System.out.println("Valid records: " + (total - invalidCount));
-                System.out.println("Invalid records: " + invalidCount);
-                System.out.println("INFO: " + infoCount);
-                System.out.println("WARN: " + warnCount);
-                System.out.println("ERROR: " + errorCount);
+                for (int i = 0; i < logEntryIndex; i++) {
+                    LogEntry entry = logEntries[i];
+                    String service = entry.getService();
+                    boolean found = false;
+
+                    for (int j = 0; j < serviceStats.length; j++) {
+                        if (serviceStats[j] != null && serviceStats[j].getSource().equals(service)) {
+                            serviceStats[j].updateStats(entry);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        ServiceStats newServiceStat = new ServiceStats(service);
+                        newServiceStat.updateStats(entry);
+
+                        serviceStats[serviceStatsIndex++] = newServiceStat;
+                        if (serviceStatsIndex == serviceStats.length) {
+                            serviceStats = reSizeServiceStats(serviceStats);
+                        }
+                    }
+                }
+
+                System.out.println("Service Statistics:\n");
+                for (int i = 0; i < serviceStatsIndex; i++) {
+                    System.out.println(serviceStats[i].toString());
+
+                    validRecords += serviceStats[i].getTotalRecords();
+                    totalWarnings += serviceStats[i].getWarningCount();
+                    totalErrors += serviceStats[i].getErrorCount();
+                    totalInfo += serviceStats[i].getInfoCount();
+                }
+
+                System.out.println("\nSummary:\n");
+                System.out.println("Total records: " + (validRecords + invalidRecords));
+                System.out.println("Valid records: " + validRecords);
+                System.out.println("Invalid records: " + invalidRecords);
+                System.out.println("INFO: " + totalInfo);
+                System.out.println("WARN: " + totalWarnings);
+                System.out.println("ERROR: " + totalErrors);
 
             } catch (Exception e) {
                 System.err.println("Error occurred while reading the log file: " + e.getMessage());
